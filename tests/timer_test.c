@@ -20,10 +20,10 @@ static void std_timer_callback(struct timer_list *t)
 static bool test_standard_timer(void)
 {
     s_std_timer_fired = false;
-    struct timer_list t;
-    timer_setup(&t, std_timer_callback, 0);
+    static struct timer_list s_std_t;
+    timer_setup(&s_std_t, std_timer_callback, 0);
 
-    mod_timer(&t, 5); /* 5ms */
+    mod_timer(&s_std_t, 5); /* 5ms */
 
     for (int i = 0; i < 20; i++) {
         cherry_timer_poll();
@@ -46,11 +46,11 @@ static enum hrtimer_restart hrtimer_callback(struct hrtimer *h)
 static bool test_hrtimer(void)
 {
     s_hrtimer_fired = false;
-    struct hrtimer h;
-    hrtimer_init(&h, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-    h.function = hrtimer_callback;
+    static struct hrtimer s_hr_h;
+    hrtimer_init(&s_hr_h, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+    s_hr_h.function = hrtimer_callback;
 
-    hrtimer_start(&h, ms_to_ktime(2), HRTIMER_MODE_REL); /* 2ms */
+    hrtimer_start(&s_hr_h, ms_to_ktime(2), HRTIMER_MODE_REL); /* 2ms */
 
     for (int i = 0; i < 20; i++) {
         cherry_timer_poll();
@@ -77,17 +77,17 @@ static bool test_multicore_timers(void)
     s_mc_fired[0] = false;
     s_mc_fired[1] = false;
 
-    struct timer_list t0, t1;
-    timer_setup(&t0, mc_timer_fn, TIMER_PINNED);
-    t0.data = (void *)(uintptr_t)0;
-    t0.cpu = 0;
+    static struct timer_list s_mc_t0, s_mc_t1;
+    timer_setup(&s_mc_t0, mc_timer_fn, TIMER_PINNED);
+    s_mc_t0.data = (void *)(uintptr_t)0;
+    s_mc_t0.cpu = 0;
 
-    timer_setup(&t1, mc_timer_fn, TIMER_PINNED);
-    t1.data = (void *)(uintptr_t)1;
-    t1.cpu = 1;
+    timer_setup(&s_mc_t1, mc_timer_fn, TIMER_PINNED);
+    s_mc_t1.data = (void *)(uintptr_t)1;
+    s_mc_t1.cpu = 1;
 
-    mod_timer(&t0, 3); /* 3ms on CPU 0 */
-    mod_timer(&t1, 3); /* 3ms on CPU 1 */
+    mod_timer(&s_mc_t0, 3); /* 3ms on CPU 0 */
+    mod_timer(&s_mc_t1, 3); /* 3ms on CPU 1 */
 
     for (int i = 0; i < 20; i++) {
         cherry_timer_poll();
@@ -113,11 +113,11 @@ static enum hrtimer_restart restart_callback(struct hrtimer *h)
 static bool test_periodic_restart(void)
 {
     s_restart_count = 0;
-    struct hrtimer h;
-    hrtimer_init(&h, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-    h.function = restart_callback;
+    static struct hrtimer s_pr_h;
+    hrtimer_init(&s_pr_h, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+    s_pr_h.function = restart_callback;
 
-    hrtimer_start(&h, ms_to_ktime(2), HRTIMER_MODE_REL);
+    hrtimer_start(&s_pr_h, ms_to_ktime(2), HRTIMER_MODE_REL);
 
     for (int i = 0; i < 30; i++) {
         cherry_timer_poll();
@@ -139,11 +139,11 @@ static void cancel_callback(struct timer_list *t)
 static bool test_cancel(void)
 {
     s_cancel_fired = false;
-    struct timer_list t;
-    timer_setup(&t, cancel_callback, 0);
+    static struct timer_list s_cancel_t;
+    timer_setup(&s_cancel_t, cancel_callback, 0);
 
-    mod_timer(&t, 50); /* 50ms */
-    int ret = del_timer(&t); /* Cancel immediately */
+    mod_timer(&s_cancel_t, 50); /* 50ms */
+    int ret = del_timer(&s_cancel_t); /* Cancel immediately */
 
     for (int i = 0; i < 10; i++) {
         cherry_timer_poll();

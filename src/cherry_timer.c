@@ -56,7 +56,12 @@ void cherry_timer_run_queues(void)
             /* Execute callback with interrupts ENABLED */
             enum hrtimer_restart restart = HRTIMER_NORESTART;
             if (target->function) {
-                restart = target->function(target);
+                if ((uintptr_t)target->function >= 0x40000000ULL) {
+                    restart = target->function(target);
+                } else {
+                    pr_err("cherry_timer: [corrupt-hrtimer] target=%p fn=%p expires=%llu\n",
+                           target, target->function, (unsigned long long)target->expires);
+                }
             }
 
             /* If callback requested restart, re-enqueue timer */
@@ -97,7 +102,12 @@ void cherry_timer_run_queues(void)
 
             /* Execute callback with interrupts ENABLED */
             if (target->function) {
-                target->function(target);
+                if ((uintptr_t)target->function >= 0x40000000ULL) {
+                    target->function(target);
+                } else {
+                    pr_err("cherry_timer: [corrupt-timer] target=%p fn=%p expires=%llu\n",
+                           target, target->function, (unsigned long long)target->expires_ns);
+                }
             }
         }
     }

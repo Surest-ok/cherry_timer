@@ -74,6 +74,7 @@ void hrtimer_start(struct hrtimer *timer, ktime_t tim, enum hrtimer_mode mode)
     timer->_softexpires = timer->expires;
 
     struct timer_base *base = timer_get_base(timer->base_cpu);
+    timer->base_cpu = (int)base->cpu_id;
     unsigned long flags = 0;
     spin_lock_irqsave(&base->lock, flags);
 

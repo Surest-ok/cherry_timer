@@ -80,6 +80,7 @@ int mod_timer(struct timer_list *timer, unsigned long expires)
     timer->expires_ns = now_ns + delta_ns;
 
     struct timer_base *base = timer_get_base(timer->cpu);
+    timer->cpu = (int)base->cpu_id;
     unsigned long flags = 0;
     spin_lock_irqsave(&base->lock, flags);
 
